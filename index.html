@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DAPIN CELINE - Solusi Pinjaman Transparan & Terpercaya</title>
+    
+    <!-- Meta & Web App PWA Setup -->
+    <meta name="theme-color" content="#be185d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Dapin Celine">
+    
+    <!-- Tailwind CSS & Lucide Icons -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Firebase SDK (v9 Compat Mode) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <!-- Custom Config Script -->
+    <script src="firebase-config.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fdf2f8',
+                            100: '#fce7f3',
+                            200: '#fbcfe8',
+                            300: '#f472b6',
+                            400: '#e11d48',
+                            500: '#be185d',
+                            600: '#9d174d',
+                            700: '#831843',
+                            800: '#500724',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #fdf2f8;
+            word-break: break-word;
+            overflow-x: hidden;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(251, 207, 232, 0.75);
+        }
+        .custom-shadow {
+            box-shadow: 0 10px 25px -5px rgba(190, 24, 93, 0.12), 0 8px 10px -6px rgba(190, 24, 93, 0.06);
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+    <!-- Header Navigation (Presisi & Bebas Tertumpuk) -->
+    <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-pink-100 shadow-sm">
+        <div class="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+            
+            <!-- Logo -->
+            <div class="flex items-center gap-2 cursor-pointer shrink-0" onclick="switchTab('landing')">
+                <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-brand-500 to-pink-300 flex items-center justify-center text-white font-serif text-lg font-bold shadow-md shrink-0">
+                    D
+                </div>
+                <div class="min-w-0">
+                    <h1 class="font-serif font-bold text-base sm:text-lg text-brand-700 leading-tight truncate">Dapin Celine</h1>
+                    <p class="text-[9px] sm:text-[10px] text-pink-500 font-medium tracking-wider truncate">SOLUSI FINANSIAL HANDAL</p>
+                </div>
+            </div>
+
+            <!-- Nav Actions -->
+            <div class="flex items-center gap-1.5 shrink-0 ml-auto">
+                <button onclick="switchTab('info')" class="px-2.5 py-1.5 text-brand-600 bg-pink-50 rounded-lg hover:bg-pink-100 transition flex items-center gap-1 text-xs font-semibold" title="Informasi & Legalitas">
+                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                    <span class="text-[11px]">Info</span>
+                </button>
+
+                <div id="auth-nav-buttons" class="flex items-center gap-1.5">
+                    <button onclick="switchTab('auth', 'login')" class="px-2.5 py-1.5 text-xs font-semibold text-brand-600 bg-pink-50 rounded-lg hover:bg-pink-100 transition">Masuk</button>
+                    <button onclick="switchTab('auth', 'register')" class="px-2.5 py-1.5 text-xs font-semibold text-white bg-brand-500 rounded-lg hover:bg-brand-600 shadow-sm transition">Daftar</button>
+                </div>
+
+                <div id="user-nav-buttons" class="hidden items-center gap-1.5">
+                    <button onclick="handleLogout()" class="px-2.5 py-1.5 text-xs font-semibold text-red-500 bg-red-50 rounded-lg hover:bg-red-100 transition flex items-center gap-1">
+                        <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Keluar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-md mx-auto w-full px-4 py-5 flex-1 space-y-5">
+
+        <!-- VIEW 1: LANDING PAGE & KALKULATOR -->
+        <section id="view-landing" class="space-y-5">
+            <!-- Hero Banner -->
+            <div class="glass-card rounded-2xl p-5 text-center relative overflow-hidden custom-shadow">
+                <div class="absolute -top-10 -right-10 w-28 h-28 bg-pink-200/50 rounded-full blur-xl pointer-events-none"></div>
+                <span class="inline-block px-3 py-1 bg-brand-100 text-brand-700 font-semibold text-[11px] rounded-full mb-2.5">
+                    🌸 Bunga Flat 3% Total (Bukan per Bulan)
+                </span>
+                <h2 class="font-serif text-xl sm:text-2xl font-bold text-slate-800 leading-tight mb-2">
+                    Pinjaman Dana Cepat, Aman & Transparan
+                </h2>
+                <p class="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto mb-3.5">
+                    Tanpa jaminan rumit. Proses kilat langsung cair ke rekening bank atau E-Wallet DANA/GoPay Anda.
+                </p>
+                <button onclick="switchTab('info')" class="inline-flex items-center gap-1.5 text-[11px] font-bold text-brand-600 bg-pink-50 px-3 py-1.5 rounded-full hover:bg-pink-100 transition">
+                    <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Pelajari Legalitas & Cara Kerja
+                </button>
+            </div>
+
+            <!-- Kalkulator Simulasi Pinjaman -->
+            <div class="glass-card rounded-2xl p-5 custom-shadow space-y-4 border-l-4 border-brand-500">
+                <div class="flex items-center gap-2 pb-2 border-b border-pink-100">
+                    <i data-lucide="calculator" class="w-4 h-4 text-brand-500 shrink-0"></i>
+                    <h3 class="font-bold text-slate-800 text-sm">Simulasi Kalkulator Pinjaman</h3>
+                </div>
+
+                <!-- Input Nominal -->
+                <div>
+                    <div class="flex justify-between items-center text-xs font-semibold text-slate-600 mb-1.5">
+                        <span>Plafon Pinjaman</span>
+                        <span id="calc-nominal-text" class="text-brand-600 font-bold text-sm">Rp 1.000.000</span>
+                    </div>
+                    <input type="range" id="calc-nominal" min="100000" max="50000000" step="100000" value="1000000" 
+                           class="w-full accent-brand-500 h-2 bg-pink-100 rounded-lg cursor-pointer" oninput="updateCalculator()">
+                    <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                        <span>Rp 100rb</span>
+                        <span>Rp 50jt</span>
+                    </div>
+                </div>
+
+                <!-- Input Tenor -->
+                <div>
+                    <div class="flex justify-between items-center text-xs font-semibold text-slate-600 mb-1.5">
+                        <span>Jangka Waktu Pelunasan</span>
+                        <span id="calc-tenor-text" class="text-brand-600 font-bold">6 Bulan</span>
+                    </div>
+                    <select id="calc-tenor" onchange="updateCalculator()" class="w-full text-xs font-semibold p-2.5 rounded-xl border border-pink-200 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <option value="1">1 Bulan</option>
+                        <option value="3">3 Bulan</option>
+                        <option value="6" selected>6 Bulan</option>
+                        <option value="9">9 Bulan</option>
+                        <option value="12">12 Bulan</option>
+                        <option value="24">24 Bulan</option>
+                    </select>
+                </div>
+
+                <!-- Ringkasan Hasil Kalkulasi -->
+                <div class="bg-gradient-to-br from-pink-50 to-white rounded-xl p-3 space-y-2 text-xs border border-pink-100">
+                    <div class="flex justify-between items-center gap-2">
+                        <span class="text-slate-500 truncate">Total Bunga Flat (3% Total):</span>
+                        <span id="calc-bunga" class="font-bold text-slate-700 shrink-0">Rp 30.000</span>
+                    </div>
+                    <div class="flex justify-between items-center gap-2">
+                        <span class="text-slate-500 truncate">Total Pengembalian:</span>
+                        <span id="calc-total" class="font-bold text-slate-700 shrink-0">Rp 1.030.000</span>
+                    </div>
+                    <div class="flex justify-between items-center gap-2 pt-1 border-t border-pink-200/60 font-bold text-brand-700">
+                        <span class="truncate">Cicilan per Bulan:</span>
+                        <span id="calc-cicilan" class="text-sm shrink-0">Rp 171.667</span>
+                    </div>
+                    <div class="flex justify-between items-center gap-2 pt-1 border-t border-pink-200/60 text-[11px] text-amber-700 font-medium">
+                        <span class="truncate">Biaya Deposit Penarikan:</span>
+                        <span id="calc-deposit" class="font-bold shrink-0">Rp 75.000</span>
+                    </div>
+                </div>
+
+                <button onclick="switchTab('auth', 'register')" class="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2">
+                    <span>Ajukan Pinjaman Sekarang</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- VIEW 2: INFORMASI & LEGALITAS -->
+        <section id="view-info" class="hidden space-y-4">
+            <div class="glass-card rounded-2xl p-5 custom-shadow space-y-4">
+                <div class="flex items-center justify-between pb-2 border-b border-pink-100">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="shield-check" class="w-5 h-5 text-brand-500 shrink-0"></i>
+                        <h3 class="font-bold text-slate-800 text-sm">Informasi Platform & Legalitas</h3>
+                    </div>
+                    <button onclick="switchTab('landing')" class="text-xs text-brand-600 font-semibold hover:underline">Kembali</button>
+                </div>
+
+                <div class="space-y-3 text-xs text-slate-600">
+                    <div class="bg-pink-50/60 p-3 rounded-xl border border-pink-100">
+                        <h4 class="font-bold text-brand-700 mb-1 flex items-center gap-1.5">
+                            <i data-lucide="lock" class="w-4 h-4 shrink-0"></i> Perlindungan Privasi 100%
+                        </h4>
+                        <p class="leading-relaxed text-[11px]">
+                            Dokumen sensitif (KTP & Selfie) dikirim langsung secara tersandi (*end-to-end*) ke WhatsApp Resmi Admin. Sistem kami tidak menyimpan berkas foto KTP di server untuk mencegah kebocoran data.
+                        </p>
+                    </div>
+
+                    <div class="bg-pink-50/60 p-3 rounded-xl border border-pink-100">
+                        <h4 class="font-bold text-brand-700 mb-1 flex items-center gap-1.5">
+                            <i data-lucide="refresh-cw" class="w-4 h-4 shrink-0"></i> Garansi Pengembalian Deposit (100% Refundable)
+                        </h4>
+                        <p class="leading-relaxed text-[11px]">
+                            Biaya deposit penarikan akun adalah jaminan pra-pencairan sementara yang **dikembalikan penuh (100%)** dan digabungkan langsung dengan total pencairan dana utama ke rekening Anda.
+                        </p>
+                    </div>
+
+                    <div class="p-3 bg-white border border-pink-100 rounded-xl space-y-1.5">
+                        <h4 class="font-bold text-slate-800">Syarat Ketentuan Pengajuan:</h4>
+                        <ul class="list-disc list-inside text-[11px] space-y-1 text-slate-500">
+                            <li>Warga Negara Indonesia (WNI) usia 21–60 tahun.</li>
+                            <li>Memiliki e-KTP asli yang masih berlaku (16 digit NIK).</li>
+                            <li>Memiliki nomor WhatsApp aktif & alamat email valid.</li>
+                            <li>Memiliki rekening Bank atau E-Wallet (DANA/GoPay) sesuai nama KTP.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <button onclick="switchTab('auth', 'register')" class="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs rounded-xl shadow-md transition text-center">
+                    Mulai Buat Akun & Ajukan Sekarang
+                </button>
+            </div>
+        </section>
+
+        <!-- VIEW 3: AUTHENTICATION (LOGIN / REGISTER / FORGOT) -->
+        <section id="view-auth" class="hidden space-y-4">
+            <div class="glass-card rounded-2xl p-5 sm:p-6 custom-shadow">
+                <!-- Tab Switching -->
+                <div id="auth-tabs" class="flex bg-pink-100 p-1 rounded-xl mb-4">
+                    <button id="tab-login-btn" onclick="toggleAuthMode('login')" class="flex-1 py-2 text-xs font-bold rounded-lg text-brand-700 bg-white shadow-sm transition">Masuk</button>
+                    <button id="tab-register-btn" onclick="toggleAuthMode('register')" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-500 hover:text-brand-700 transition">Daftar Baru</button>
+                </div>
+
+                <!-- Form Login / Register -->
+                <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-3">
+                    <div id="field-nama" class="hidden">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Nama Lengkap (Sesuai KTP)</label>
+                        <input type="text" id="auth-nama" placeholder="Contoh: Budi Santoso" class="w-full text-xs p-3 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Alamat Email</label>
+                        <input type="email" id="auth-email" required placeholder="email@domain.com" class="w-full text-xs p-3 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+
+                    <!-- Password Input dengan Toggle Mata -->
+                    <div id="field-password">
+                        <div class="flex justify-between items-center mb-1 gap-2">
+                            <label class="block text-xs font-bold text-slate-700">Kata Sandi (Password)</label>
+                            <button type="button" id="forgot-pw-btn" onclick="toggleAuthMode('forgot')" class="text-[11px] font-semibold text-brand-600 hover:underline shrink-0">Lupa Kata Sandi?</button>
+                        </div>
+                        <div class="relative">
+                            <input type="password" id="auth-password" placeholder="Minimal 6 karakter" class="w-full text-xs p-3 pr-10 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <button type="button" onclick="togglePasswordVisibility('auth-password', 'eye-icon-1')" class="absolute right-3 top-3 text-slate-400 hover:text-brand-500 p-0.5">
+                                <i id="eye-icon-1" data-lucide="eye" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Input Confirm Password -->
+                    <div id="field-confirm-password" class="hidden">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Konfirmasi Ulang Kata Sandi</label>
+                        <div class="relative">
+                            <input type="password" id="auth-confirm-password" placeholder="Ulangi kata sandi di atas" class="w-full text-xs p-3 pr-10 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <button type="button" onclick="togglePasswordVisibility('auth-confirm-password', 'eye-icon-2')" class="absolute right-3 top-3 text-slate-400 hover:text-brand-500 p-0.5">
+                                <i id="eye-icon-2" data-lucide="eye" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="auth-submit-btn" class="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs rounded-xl shadow-md transition mt-2">
+                        Masuk Akun
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- VIEW 4: FORM PENGAJUAN PINJAMAN -->
+        <section id="view-form" class="hidden space-y-4">
+            <div class="glass-card rounded-2xl p-5 custom-shadow space-y-4">
+                <div class="flex items-center justify-between pb-2 border-b border-pink-100">
+                    <h3 class="font-bold text-slate-800 text-sm">Formulir Pengajuan Data</h3>
+                    <span class="text-[10px] text-pink-500 bg-pink-50 px-2 py-0.5 rounded-md font-semibold shrink-0">Langkah 1 dari 2</span>
+                </div>
+
+                <form id="loan-form" onsubmit="handleLoanSubmit(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">NIK KTP (16 Digit Angka)</label>
+                        <input type="text" id="loan-nik" maxlength="16" pattern="\d{16}" required placeholder="3204xxxxxxxxxxxx" class="w-full text-xs p-2.5 rounded-xl border border-pink-200 focus:ring-2 focus:ring-brand-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Nomor WhatsApp Aktif</label>
+                        <input type="tel" id="loan-wa" placeholder="08xxxxxxxxxx" required class="w-full text-xs p-2.5 rounded-xl border border-pink-200 focus:ring-2 focus:ring-brand-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Pekerjaan / Sumber Penghasilan</label>
+                        <input type="text" id="loan-pekerjaan" placeholder="Karyawan / Wiraswasta / Lainnya" required class="w-full text-xs p-2.5 rounded-xl border border-pink-200 focus:ring-2 focus:ring-brand-500">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Bank / E-Wallet</label>
+                            <select id="loan-bank" required class="w-full text-xs p-2.5 rounded-xl border border-pink-200 focus:ring-2 focus:ring-brand-500 bg-white">
+                                <option value="BCA">Bank BCA</option>
+                                <option value="MANDIRI">Bank Mandiri</option>
+                                <option value="BRI">Bank BRI</option>
+                                <option value="BNI">Bank BNI</option>
+                                <option value="DANA">E-Wallet DANA</option>
+                                <option value="GOPAY">E-Wallet GoPay</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">No. Rekening / HP</label>
+                            <input type="text" id="loan-rekening" placeholder="123456789" required class="w-full text-xs p-2.5 rounded-xl border border-pink-200 focus:ring-2 focus:ring-brand-500">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Nominal Pinjaman</label>
+                            <input type="number" id="loan-nominal" min="100000" max="50000000" step="100000" value="1000000" required class="w-full text-xs p-2.5 rounded-xl border border-pink-200 focus:ring-2 focus:ring-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Tenor Pelunasan</label>
+                            <select id="loan-tenor" class="w-full text-xs p-2.5 rounded-xl border border-pink-200 focus:ring-2 focus:ring-brand-500 bg-white">
+                                <option value="1">1 Bulan</option>
+                                <option value="3">3 Bulan</option>
+                                <option value="6" selected>6 Bulan</option>
+                                <option value="9">9 Bulan</option>
+                                <option value="12">12 Bulan</option>
+                                <option value="24">24 Bulan</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs rounded-xl shadow-md transition">
+                        Lanjutkan Pengajuan
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- VIEW 5: STATUS REAL-TIME & DEPOSIT PAYMENT GATEWAY -->
+        <section id="view-status" class="hidden space-y-4">
+            <div id="status-card" class="glass-card rounded-2xl p-5 custom-shadow space-y-4">
+                <!-- Dynamic Status Header -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-pink-100 py-4 text-center text-[10px] text-slate-400">
+        <p>© 2026 DAPIN CELINE. All rights reserved.</p>
+        <p class="mt-0.5">Keamanan Data Terjamin & Transparan</p>
+    </footer>
+
+    <!-- MAIN JAVASCRIPT LOGIC -->
+    <script>
+        let db, auth;
+        let currentUser = null;
+        let activeApplication = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof firebaseConfig !== 'undefined' && firebaseConfig.apiKey !== "YOUR_API_KEY_HERE") {
+                firebase.initializeApp(firebaseConfig);
+                auth = firebase.auth();
+                db = firebase.firestore();
+
+                auth.onAuthStateChanged(user => {
+                    currentUser = user;
+                    updateNavState();
+                    if (user) {
+                        listenUserLoanStatus(user.uid);
+                    } else {
+                        switchTab('landing');
+                    }
+                });
+            } else {
+                console.warn("Konfigurasi Firebase belum diisi di firebase-config.js!");
+            }
+
+            lucide.createIcons();
+            updateCalculator();
+        });
+
+        // Tab Switcher
+        function switchTab(viewName, authSubMode = 'login') {
+            ['landing', 'info', 'auth', 'form', 'status'].forEach(v => {
+                const el = document.getElementById(`view-${v}`);
+                if (el) el.classList.add('hidden');
+            });
+            
+            const target = document.getElementById(`view-${viewName}`);
+            if (target) target.classList.remove('hidden');
+
+            if (viewName === 'auth') {
+                toggleAuthMode(authSubMode);
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateNavState() {
+            const authBtns = document.getElementById('auth-nav-buttons');
+            const userBtns = document.getElementById('user-nav-buttons');
+            if (currentUser) {
+                authBtns.classList.add('hidden');
+                userBtns.classList.remove('hidden');
+            } else {
+                authBtns.classList.remove('hidden');
+                userBtns.classList.add('hidden');
+            }
+        }
+
+        // Toggle Visibility Password Field
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                input.type = 'password';
+                icon.setAttribute('data-lucide', 'eye');
+            }
+            lucide.createIcons();
+        }
+
+        // Calculator Interactive Logic
+        function updateCalculator() {
+            const nominal = parseFloat(document.getElementById('calc-nominal').value);
+            const tenor = parseInt(document.getElementById('calc-tenor').value);
+            
+            const calc = hitungPinjaman(nominal, tenor);
+
+            document.getElementById('calc-nominal-text').innerText = 'Rp ' + calc.nominalPinjaman.toLocaleString('id-ID');
+            document.getElementById('calc-tenor-text').innerText = calc.tenor + ' Bulan';
+            document.getElementById('calc-bunga').innerText = 'Rp ' + calc.totalBunga.toLocaleString('id-ID');
+            document.getElementById('calc-total').innerText = 'Rp ' + calc.totalPengembalian.toLocaleString('id-ID');
+            document.getElementById('calc-cicilan').innerText = 'Rp ' + Math.round(calc.cicilanPerBulan).toLocaleString('id-ID');
+            document.getElementById('calc-deposit').innerText = 'Rp ' + calc.biayaDeposit.toLocaleString('id-ID');
+        }
+
+        // Auth Submit (Login / Register / Forgot Password)
+        let currentAuthMode = 'login';
+        function toggleAuthMode(mode) {
+            currentAuthMode = mode;
+            const namaField = document.getElementById('field-nama');
+            const passwordField = document.getElementById('field-password');
+            const confirmPasswordField = document.getElementById('field-confirm-password');
+            const submitBtn = document.getElementById('auth-submit-btn');
+            const tabLogin = document.getElementById('tab-login-btn');
+            const tabRegister = document.getElementById('tab-register-btn');
+            const authTabs = document.getElementById('auth-tabs');
+
+            authTabs.classList.remove('hidden');
+
+            if (mode === 'register') {
+                namaField.classList.remove('hidden');
+                passwordField.classList.remove('hidden');
+                confirmPasswordField.classList.remove('hidden');
+                submitBtn.innerText = 'Daftar Akun Baru';
+                tabRegister.className = "flex-1 py-2 text-xs font-bold rounded-lg text-brand-700 bg-white shadow-sm transition";
+                tabLogin.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-500 hover:text-brand-700 transition";
+            } else if (mode === 'login') {
+                namaField.classList.add('hidden');
+                passwordField.classList.remove('hidden');
+                confirmPasswordField.classList.add('hidden');
+                submitBtn.innerText = 'Masuk Akun';
+                tabLogin.className = "flex-1 py-2 text-xs font-bold rounded-lg text-brand-700 bg-white shadow-sm transition";
+                tabRegister.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-500 hover:text-brand-700 transition";
+            } else if (mode === 'forgot') {
+                authTabs.classList.add('hidden');
+                namaField.classList.add('hidden');
+                passwordField.classList.add('hidden');
+                confirmPasswordField.classList.add('hidden');
+                submitBtn.innerText = 'Kirim Email Reset Password';
+            }
+        }
+
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+
+            try {
+                if (currentAuthMode === 'forgot') {
+                    await auth.sendPasswordResetEmail(email);
+                    alert("Email reset password telah dikirim ke " + email + ". Silakan periksa kotak masuk (inbox/spam) Anda.");
+                    toggleAuthMode('login');
+                    return;
+                }
+
+                const password = document.getElementById('auth-password').value;
+
+                if (currentAuthMode === 'register') {
+                    const confirmPassword = document.getElementById('auth-confirm-password').value;
+                    if (password !== confirmPassword) {
+                        alert("Konfirmasi kata sandi tidak cocok. Silakan periksa kembali.");
+                        return;
+                    }
+                    const nama = document.getElementById('auth-nama').value;
+                    const res = await auth.createUserWithEmailAndPassword(email, password);
+                    await db.collection('users').doc(res.user.uid).set({
+                        uid: res.user.uid,
+                        nama: nama,
+                        email: email,
+                        role: 'user',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                } else {
+                    await auth.signInWithEmailAndPassword(email, password);
+                }
+            } catch (err) {
+                alert("Gagal Autentikasi: " + err.message);
+            }
+        }
+
+        function handleLogout() {
+            auth.signOut().then(() => switchTab('landing'));
+        }
+
+        // Submit Loan Application Form
+        async function handleLoanSubmit(e) {
+            e.preventDefault();
+            if (!currentUser) return alert("Silakan login terlebih dahulu.");
+
+            const nik = document.getElementById('loan-nik').value;
+            const wa = document.getElementById('loan-wa').value;
+            const pekerjaan = document.getElementById('loan-pekerjaan').value;
+            const bank = document.getElementById('loan-bank').value;
+            const rekening = document.getElementById('loan-rekening').value;
+            const nominal = parseFloat(document.getElementById('loan-nominal').value);
+            const tenor = parseInt(document.getElementById('loan-tenor').value);
+
+            const calc = hitungPinjaman(nominal, tenor);
+            const kodeUnik = 'DPN-' + Math.floor(100000 + Math.random() * 900000);
+
+            const loanData = {
+                uid: currentUser.uid,
+                kodeUnik: kodeUnik,
+                nik: nik,
+                nomorWA: wa,
+                pekerjaan: pekerjaan,
+                bank: bank,
+                nomorRekening: rekening,
+                nominalPinjaman: nominal,
+                tenor: tenor,
+                totalBunga: calc.totalBunga,
+                totalPengembalian: calc.totalPengembalian,
+                cicilanPerBulan: calc.cicilanPerBulan,
+                biayaDeposit: calc.biayaDeposit,
+                status: 'PENDING_KTP',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                await db.collection('applications').doc(currentUser.uid).set(loanData);
+                const textWA = `Halo Admin Dapin Celine,%0ANama: ${currentUser.email}%0AKode Pengajuan: *${kodeUnik}*%0ANIK: ${nik}%0ANominal: Rp ${nominal.toLocaleString('id-ID')}%0A%0ASaya ingin melakukan verifikasi foto KTP & Selfie KTP.`;
+                window.open(`https://wa.me/${CONFIG_PEMBAYARAN.nomorWAAdmin}?text=${textWA}`, '_blank');
+            } catch (err) {
+                alert("Gagal menyimpan pengajuan: " + err.message);
+            }
+        }
+
+        // Realtime Firestore Status Listener
+        function listenUserLoanStatus(uid) {
+            db.collection('applications').doc(uid).onSnapshot(doc => {
+                if (!doc.exists) {
+                    switchTab('form');
+                } else {
+                    activeApplication = doc.data();
+                    renderStatusScreen(activeApplication);
+                    switchTab('status');
+                }
+            });
+        }
+
+        // Render Dynamic Status & Payment Screen
+        function renderStatusScreen(app) {
+            const container = document.getElementById('status-card');
+            let content = '';
+
+            if (app.status === 'PENDING_KTP') {
+                content = `
+                    <div class="text-center space-y-3">
+                        <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto">
+                            <i data-lucide="clock" class="w-6 h-6"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800">Menunggu Verifikasi KTP</h3>
+                        <p class="text-xs text-slate-500">Kode Pengajuan Unik Anda: <b class="text-brand-600">${app.kodeUnik}</b></p>
+                        <p class="text-xs text-slate-500 leading-relaxed">Silakan kirimkan foto KTP dan Selfie KTP Anda ke WhatsApp Admin Resmi kami untuk verifikasi.</p>
+                        <button onclick="resendKTPWA('${app.kodeUnik}')" class="w-full py-2.5 bg-green-500 hover:bg-green-600 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2">
+                            <i data-lucide="message-circle" class="w-4 h-4"></i> Kirim Ulang Bukti KTP via WA
+                        </button>
+                    </div>
+                `;
+            } else if (app.status === 'IN_REVIEW') {
+                content = `
+                    <div class="text-center space-y-3">
+                        <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto">
+                            <i data-lucide="search" class="w-6 h-6"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800">Sedang Analisis Data</h3>
+                        <p class="text-xs text-slate-500 leading-relaxed">Tim analis kami sedang memeriksa kelayakan dokumen Anda. Mohon tunggu beberapa saat.</p>
+                    </div>
+                `;
+            } else if (app.status === 'APPROVED') {
+                content = `
+                    <div class="space-y-4">
+                        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+                            <h3 class="font-bold text-emerald-800 text-sm">🎉 Pengajuan Di-ACC!</h3>
+                            <p class="text-xs text-emerald-600">Pinjaman sebesar <b>Rp ${app.nominalPinjaman.toLocaleString('id-ID')}</b> telah disetujui.</p>
+                        </div>
+
+                        <div class="glass-card p-4 rounded-xl space-y-2 text-xs">
+                            <div class="flex justify-between items-center font-semibold">
+                                <span>Biaya Deposit Penarikan:</span>
+                                <span class="text-brand-600 font-bold">Rp ${app.biayaDeposit.toLocaleString('id-ID')}</span>
+                            </div>
+                            <p class="text-[10px] text-slate-400 leading-tight">
+                                Catatan: Biaya deposit ini bersifat sementara dan akan dikembalikan (100% refund) digabung saat pencairan dana utama.
+                            </p>
+                        </div>
+
+                        <!-- Payment Gateway Options -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-2">Pilih Metode Deposit:</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button onclick="selectPayment('DANA')" class="p-2 border rounded-xl bg-white hover:border-brand-500 flex flex-col items-center justify-center gap-1 shadow-sm">
+                                    <img src="${CONFIG_PEMBAYARAN.dana.logoUrl}" class="h-5 object-contain">
+                                    <span class="text-[10px] font-bold">DANA</span>
+                                </button>
+                                <button onclick="selectPayment('GOPAY')" class="p-2 border rounded-xl bg-white hover:border-brand-500 flex flex-col items-center justify-center gap-1 shadow-sm">
+                                    <img src="${CONFIG_PEMBAYARAN.gopay.logoUrl}" class="h-5 object-contain">
+                                    <span class="text-[10px] font-bold">GoPay</span>
+                                </button>
+                                <button onclick="selectPayment('QRIS')" class="p-2 border rounded-xl bg-white hover:border-brand-500 flex flex-col items-center justify-center gap-1 shadow-sm">
+                                    <img src="${CONFIG_PEMBAYARAN.qris.logoUrl}" class="h-5 object-contain">
+                                    <span class="text-[10px] font-bold">QRIS</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="payment-details-box" class="hidden glass-card p-4 rounded-xl space-y-3">
+                            <!-- Dynamic Payment Detail -->
+                        </div>
+                    </div>
+                `;
+            } else if (app.status === 'DEPOSIT_PAID') {
+                content = `
+                    <div class="text-center space-y-3">
+                        <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mx-auto">
+                            <i data-lucide="refresh-cw" class="w-6 h-6 animate-spin"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800">Deposit Diterima</h3>
+                        <p class="text-xs text-slate-500 leading-relaxed">Bukti deposit Anda telah dikonfirmasi. Dana utama + Refund Deposit sedang diproses untuk ditransfer ke rekening Anda.</p>
+                    </div>
+                `;
+            } else if (app.status === 'COMPLETED') {
+                content = `
+                    <div class="text-center space-y-3">
+                        <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                            <i data-lucide="check-circle" class="w-6 h-6"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800">Pencairan Selesai!</h3>
+                        <p class="text-xs text-slate-500 leading-relaxed">Dana sebesar <b>Rp ${(app.nominalPinjaman + app.biayaDeposit).toLocaleString('id-ID')}</b> telah ditransfer ke rekening/E-Wallet Anda.</p>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = content;
+            lucide.createIcons();
+        }
+
+        function selectPayment(method) {
+            const box = document.getElementById('payment-details-box');
+            box.classList.remove('hidden');
+            
+            let detail = '';
+            if (method === 'DANA') {
+                detail = `
+                    <div class="text-center space-y-2 text-xs">
+                        <img src="${CONFIG_PEMBAYARAN.dana.logoUrl}" class="h-6 mx-auto object-contain">
+                        <p class="font-semibold">Transfer DANA ke Nomor Berikut:</p>
+                        <div class="bg-pink-50 p-2 rounded-lg font-mono font-bold text-sm text-brand-700 flex justify-between items-center">
+                            <span>${CONFIG_PEMBAYARAN.dana.nomor}</span>
+                            <button onclick="navigator.clipboard.writeText('${CONFIG_PEMBAYARAN.dana.nomor}')" class="text-[10px] bg-white px-2 py-1 rounded border">Salin</button>
+                        </div>
+                        <p class="text-[10px] text-slate-400">a.n ${CONFIG_PEMBAYARAN.dana.atasNama}</p>
+                    </div>
+                `;
+            } else if (method === 'GOPAY') {
+                detail = `
+                    <div class="text-center space-y-2 text-xs">
+                        <img src="${CONFIG_PEMBAYARAN.gopay.logoUrl}" class="h-6 mx-auto object-contain">
+                        <p class="font-semibold">Transfer GoPay ke Nomor Berikut:</p>
+                        <div class="bg-pink-50 p-2 rounded-lg font-mono font-bold text-sm text-brand-700 flex justify-between items-center">
+                            <span>${CONFIG_PEMBAYARAN.gopay.nomor}</span>
+                            <button onclick="navigator.clipboard.writeText('${CONFIG_PEMBAYARAN.gopay.nomor}')" class="text-[10px] bg-white px-2 py-1 rounded border">Salin</button>
+                        </div>
+                        <p class="text-[10px] text-slate-400">a.n ${CONFIG_PEMBAYARAN.gopay.atasNama}</p>
+                    </div>
+                `;
+            } else if (method === 'QRIS') {
+                detail = `
+                    <div class="text-center space-y-2 text-xs">
+                        <img src="${CONFIG_PEMBAYARAN.qris.logoUrl}" class="h-6 mx-auto object-contain">
+                        <p class="font-semibold">Scan QRIS Di Bawah Ini:</p>
+                        <img src="${CONFIG_PEMBAYARAN.qris.imageUrl}" class="w-48 h-48 mx-auto rounded-lg border object-cover">
+                        <p class="text-[10px] text-slate-400">a.n ${CONFIG_PEMBAYARAN.qris.atasNama}</p>
+                    </div>
+                `;
+            }
+
+            detail += `
+                <button onclick="confirmPaymentWA('${method}')" class="w-full mt-3 py-2.5 bg-green-500 hover:bg-green-600 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2">
+                    <i data-lucide="send" class="w-4 h-4"></i> Konfirmasi Kirim Bukti via WA
+                </button>
+            `;
+
+            box.innerHTML = detail;
+            lucide.createIcons();
+        }
+
+        function confirmPaymentWA(method) {
+            const textWA = `Halo Admin Dapin Celine,%0ANama: ${currentUser.email}%0AKode Pengajuan: *${activeApplication.kodeUnik}*%0AMetode Deposit: *${method}*%0ANominal Deposit: Rp ${activeApplication.biayaDeposit.toLocaleString('id-ID')}%0A%0ASaya sudah melunasi deposit penarikan. Mohon diproses.`;
+            window.open(`https://wa.me/${CONFIG_PEMBAYARAN.nomorWAAdmin}?text=${textWA}`, '_blank');
+        }
+
+        function resendKTPWA(kode) {
+            const textWA = `Halo Admin Dapin Celine,%0AKode Pengajuan: *${kode}*%0ASaya ingin melakukan verifikasi ulang KTP.`;
+            window.open(`https://wa.me/${CONFIG_PEMBAYARAN.nomorWAAdmin}?text=${textWA}`, '_blank');
+        }
+    </script>
+</body>
+</html>
